@@ -134,3 +134,120 @@ app.post('/api/userlogin', (req, res) => {
 
 
 //user login end
+//login api end
+
+
+//Registration APIs for sellers and customers
+ 
+app.post("/api/signup", (req, res) => {
+  var dataset = req.body;
+  var name = dataset.name;
+  var email = dataset.email;
+  var usertype = dataset.usertype;
+  var address = dataset.address;
+  var password = dataset.password;
+
+  // Check if the email already exists in the database
+  const checkEmailQuery =
+    "SELECT COUNT(*) AS count FROM tblcustomer WHERE email = ?";
+  db.query(checkEmailQuery, [email], (error, results, fields) => {
+    if (error) {
+      console.error(error);
+      return res.status(500).send("Error checking email");
+    }
+
+    const emailExists = results[0].count > 0;
+
+    if (emailExists) {
+      return res.status(400).send("Email already exists in the database");
+    } else {
+      // Hash the password and insert data into the tables
+      bcrypt.hash(password, 10, (err, hashedPassword) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).send("Error hashing password");
+        }
+
+        if (usertype === "customer") {
+          var query =
+            "INSERT INTO tblcustomer (name, email, address, password) VALUES (?, ?, ?, ?)";
+          db.query(
+            query,
+            [name, email, address, hashedPassword],
+            (error, results, fields) => {
+              if (error) {
+                console.error(error);
+
+                return res.status(500).json({
+                  success: false,
+                  message: "Error registering customer",
+                });
+              } else {
+                return res.status(200).json({
+                  success: false,
+                  message: "Customer registered successfully",
+                });
+              }
+            }
+          );
+        } else {
+          var query =
+            "INSERT INTO tblseller (name, email, address, password) VALUES (?, ?, ?, ?)";
+          db.query(
+            query,
+            [name, email, address, hashedPassword],
+            (error, results, fields) => {
+              if (error) {
+                console.error(error);
+
+                return res.status(500).json({
+                  success: false,
+                  message: "Error registering seller",
+                });
+              } else {
+                return res.status(200).json({
+                  success: false,
+                  message: "Seller registered successfully",
+                });
+              }
+            }
+          );
+        }
+      });
+    }
+  });
+});
+
+//Seller Registration End
+
+//retrive data from db
+
+//retrieve data for admin
+
+//for dashboard
+app.post('/api/dashboard', (req, res) => {
+  const sqlTotSellers = 'SELECT COUNT(*) AS total_sellers FROM tblseller;';
+  const sqlTotCustomers = 'SELECT COUNT(*) AS total_customers FROM tblcustomer;';
+  
+  db.query(sqlTotSellers, (errSellers, resultSellers) => {
+    if (errSellers) {
+      console.error('Error fetching sellers:', errSellers);
+      res.status(500).json({ error: 'Error fetching sellers' });
+    } else {
+      db.query(sqlTotCustomers, (errCustomers, resultCustomers) => {
+        if (errCustomers) {
+          console.error('Error fetching customers:', errCustomers);
+          res.status(500).json({ error: 'Error fetching customers' });
+        } else {
+          const totalSellersCount = resultSellers[0].total_sellers;
+          const totalCustomersCount = resultCustomers[0].total_customers;
+          
+          res.json({
+            totalSellersCount: totalSellersCount,
+            totalCustomersCount: totalCustomersCount
+          });
+        }
+      });
+    }
+  });
+});
